@@ -90,8 +90,29 @@ end
 lvm_logical_volume "#{sanitized_nickname}-lv" do
   group "#{sanitized_nickname}-vg"
   size '100%VG'
-  filesystem node['rs-storage']['device']['filesystem']
-  mount_point node['rs-storage']['device']['mount_point']
   stripes device_count
   stripe_size node['rs-storage']['device']['stripe_size']
+end
+
+# Encrypt if LVM device if enabled
+if node['rs-storage']['device']['encryption']
+
+  execute 'format encrypt device' do
+    command "cryptsetup luksFormat /dev/mapper/#{sanitized_nickname}-vg-#{sanitized_nickname}-lv"
+    not_if ::File.exists?("mapper device")
+  end
+
+  execute 'open encrypt device' do
+    command "cryptsetup luksOpen /dev/mapper/#{sanitized_nickname}-vg-#{sanitized_nickname}-lv encrypted_#{sanitized_nickname}-vg-#{sanitized_nickname}-lv"
+    not_if ::File.exists?("mapper device")
+  end
+end
+
+# Format device
+filesystem nickname do
+  fstype node['rs-storage']['device']['filesystem']
+  device lazy { node['rightscale_volume'][nickname]['device'] }
+  mkfs_options node['rs-storage']['device']['mkfs_options']
+  mount node['rs-storage']['device']['mount_point']
+  action [:create, :enable, :mount]
 end

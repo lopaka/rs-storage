@@ -152,3 +152,16 @@ attribute 'rs-storage/schedule/minute',
   :description => 'The minute to schedule the backup on. This value should abide by crontab syntax. Example: 30',
   :recipes => ['rs-storage::schedule'],
   :required => 'required'
+
+attribute 'rs-storage/device/encryption',
+  :display_name => 'Device Encryption',
+  :description => 'If enabled, will use LUKS to encrypt volume device.'
+  :recipes => ['rs-storage::volume', 'rs-storage::stripe'],
+  :default => 'false',
+  :required => 'optional'
+
+attribute 'rs-storage/device/encryption_key',
+  :display_name => 'Device Encryption key',
+  :description => 'Encryption key for device encryption.'
+  :recipes => ['rs-storage::volume', 'rs-storage::stripe'],
+  :required => 'optional'

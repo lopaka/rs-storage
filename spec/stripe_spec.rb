@@ -19,7 +19,7 @@ describe 'rs-storage::stripe' do
 
   before do
     stub_command('[ `rs_config --get decommission_timeout` -eq 600 ]').and_return(false)
-    stub_command('cryptsetup isLuks /dev/mapper/data-storage-vg-data-storage-lv').and_return(false)
+    stub_command('cryptsetup isLuks /dev/mapper/data--storage--vg-data--storage--lv').and_return(false)
   end
 
   context 'rs-storage/restore/lineage is not set' do
@@ -93,10 +93,10 @@ describe 'rs-storage::stripe' do
 
       it 'formats and opens encrypted device' do
         expect(chef_run).to run_execute('cryptsetup format device').with(
-          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksFormat /dev/mapper/#{volume_group}-#{logical_volume} -"
+          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksFormat /dev/mapper/data--storage--vg-data--storage--lv -"
         )
         expect(chef_run).to run_execute('cryptsetup open device').with(
-          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksOpen /dev/mapper/#{volume_group}-#{logical_volume} encrypted-#{volume_group}-#{logical_volume} --key-file -"
+          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksOpen /dev/mapper/data--storage--vg-data--storage--lv encrypted-data--storage--vg-data--storage--lv --key-file -"
         )
       end
       it 'formats the volume and mounts it' do
@@ -175,10 +175,10 @@ describe 'rs-storage::stripe' do
 
       it 'formats and opens encrypted device' do
         expect(chef_run).to run_execute('cryptsetup format device').with(
-          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksFormat /dev/mapper/#{volume_group}-#{logical_volume} -"
+          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksFormat /dev/mapper/data--storage--vg-data--storage--lv -"
         )
         expect(chef_run).to run_execute('cryptsetup open device').with(
-          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksOpen /dev/mapper/#{volume_group}-#{logical_volume} encrypted-#{volume_group}-#{logical_volume} --key-file -"
+          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksOpen /dev/mapper/data--storage--vg-data--storage--lv encrypted-data--storage--vg-data--storage--lv --key-file -"
         )
       end
       it 'formats the volume and mounts it' do

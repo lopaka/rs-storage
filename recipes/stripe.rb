@@ -94,17 +94,20 @@ lvm_logical_volume "#{sanitized_nickname}-lv" do
   stripe_size node['rs-storage']['device']['stripe_size']
 end
 
-# Encrypt if LVM device if enabled
+# Encrypt if enabled
 if node['rs-storage']['device']['encryption']
+  if node['rs-storage']['device']['encryption_key']
+    execute 'format encrypt device' do
+      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksFormat /dev/mapper/#{sanitized_nickname}-vg-#{sanitized_nickname}-lv"
+      not_if ::File.exists?("mapper device")
+    end
 
-  execute 'format encrypt device' do
-    command "cryptsetup luksFormat /dev/mapper/#{sanitized_nickname}-vg-#{sanitized_nickname}-lv"
-    not_if ::File.exists?("mapper device")
-  end
-
-  execute 'open encrypt device' do
-    command "cryptsetup luksOpen /dev/mapper/#{sanitized_nickname}-vg-#{sanitized_nickname}-lv encrypted_#{sanitized_nickname}-vg-#{sanitized_nickname}-lv"
-    not_if ::File.exists?("mapper device")
+    execute 'open encrypt device' do
+      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksOpen /dev/mapper/#{sanitized_nickname}-vg-#{sanitized_nickname}-lv encrypted_#{sanitized_nickname}-vg-#{sanitized_nickname}-lv -d -"
+      not_if ::File.exists?("mapper device")
+    end
+  else
+    Chef::Log.info "Encryption key not set - device encryption not enabled"
   end
 end
 

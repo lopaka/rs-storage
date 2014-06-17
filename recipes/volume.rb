@@ -83,7 +83,7 @@ if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['dev
     execute 'cryptsetup open device' do
       environment 'ENCRYPTION_KEY' => node['rs-storage']['device']['encryption_key']
       command lazy { "echo -n ${ENCRYPTION_KEY} | cryptsetup luksOpen #{node['rightscale_volume'][nickname]['device']} encrypted-#{nickname} --key-file=-" }
-      not_if ::File.exists?("/dev/mapper/encrypted-#{nickname}")
+      not_if { ::File.exists?("/dev/mapper/encrypted-#{nickname}") }
     end
   else
     Chef::Log.info "Encryption key not set - device encryption not enabled"

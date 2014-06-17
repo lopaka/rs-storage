@@ -106,12 +106,12 @@ if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['dev
     package "cryptsetup"
 
     execute 'cryptsetup format device' do
-      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksFormat /dev/mapper/#{logical_volume_device_name} -"
+      command "echo -n '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksFormat /dev/mapper/#{logical_volume_device_name} --batch-mode"
       not_if "cryptsetup isLuks /dev/mapper/#{logical_volume_device_name}"
     end
 
     execute 'cryptsetup open device' do
-      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksOpen /dev/mapper/#{logical_volume_device_name} encrypted-#{logical_volume_device_name} --key-file -"
+      command "echo -n '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksOpen /dev/mapper/#{logical_volume_device_name} encrypted-#{logical_volume_device_name} --key-file=-"
       not_if ::File.exists?("/dev/mapper/encrypted-#{logical_volume_device_name}")
     end
   else

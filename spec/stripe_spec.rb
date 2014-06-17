@@ -58,6 +58,7 @@ describe 'rs-storage::stripe' do
       expect(chef_run).to create_filesystem(nickname).with(
         fstype: 'ext4',
         mkfs_options: '-F',
+        device: "/dev/mapper/data--storage--vg-data--storage--lv",
         mount: '/mnt/storage',
       )
       expect(chef_run).to enable_filesystem(nickname)
@@ -91,7 +92,7 @@ describe 'rs-storage::stripe' do
         chef_runner.converge(described_recipe)
       end
 
-      it 'formats and opens encrypted device' do
+      it 'sets up and opens encrypted device' do
         expect(chef_run).to run_execute('cryptsetup format device').with(
           command: "echo 'ENCRYPTION_KEY' | cryptsetup luksFormat /dev/mapper/data--storage--vg-data--storage--lv -"
         )
@@ -103,6 +104,7 @@ describe 'rs-storage::stripe' do
         expect(chef_run).to create_filesystem(nickname).with(
           fstype: 'ext4',
           mkfs_options: '-F',
+          device: "/dev/mapper/encrypted-data--storage--vg-data--storage--lv",
           mount: '/mnt/storage',
         )
         expect(chef_run).to enable_filesystem(nickname)
@@ -144,6 +146,7 @@ describe 'rs-storage::stripe' do
       expect(chef_run).to create_filesystem(nickname).with(
         fstype: 'ext4',
         mkfs_options: '-F',
+        device: "/dev/mapper/data--storage--vg-data--storage--lv",
         mount: '/mnt/storage',
       )
       expect(chef_run).to enable_filesystem(nickname)
@@ -173,7 +176,7 @@ describe 'rs-storage::stripe' do
         chef_runner_restore.converge(described_recipe)
       end
 
-      it 'formats and opens encrypted device' do
+      it 'sets up and opens encrypted device' do
         expect(chef_run).to run_execute('cryptsetup format device').with(
           command: "echo 'ENCRYPTION_KEY' | cryptsetup luksFormat /dev/mapper/data--storage--vg-data--storage--lv -"
         )
@@ -185,6 +188,7 @@ describe 'rs-storage::stripe' do
         expect(chef_run).to create_filesystem(nickname).with(
           fstype: 'ext4',
           mkfs_options: '-F',
+          device: "/dev/mapper/encrypted-data--storage--vg-data--storage--lv",
           mount: '/mnt/storage',
         )
         expect(chef_run).to enable_filesystem(nickname)

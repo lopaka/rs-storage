@@ -94,21 +94,25 @@ lvm_logical_volume "#{sanitized_nickname}-lv" do
   stripe_size node['rs-storage']['device']['stripe_size']
 end
 
+# Construct the logical volume from the name of the volume group and the name of the logical volume similar to how the
+# lvm cookbook constructs the name during the creation of the logical volume
+logical_volume_device_name = "#{to_dm_name("#{sanitized_nickname}-vg")}-#{to_dm_name("#{sanitized_nickname}-lv")}"
+
 # Encrypt if enabled
 if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['device']['encryption'] == 'true'
   if node['rs-storage']['device']['encryption_key']
 
-    # Construct the logical volume from the name of the volume group and the name of the logical volume similar to how the
-    # lvm cookbook constructs the name during the creation of the logical volume
-    logical_volume_device = "#{to_dm_name("#{sanitized_nickname}-vg")}-#{to_dm_name("#{sanitized_nickname}-lv")}"
+    # Verify cryptsetup is installed
+    package "cryptsetup"
+
     execute 'cryptsetup format device' do
-      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksFormat /dev/mapper/#{logical_volume_device} -"
-      not_if "cryptsetup isLuks /dev/mapper/#{logical_volume_device}"
+      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksFormat /dev/mapper/#{logical_volume_device_name} -"
+      not_if "cryptsetup isLuks /dev/mapper/#{logical_volume_device_name}"
     end
 
     execute 'cryptsetup open device' do
-      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksOpen /dev/mapper/#{logical_volume_device} encrypted-#{logical_volume_device} --key-file -"
-      not_if ::File.exists?("/dev/mapper/encrypted-#{logical_volume_device}")
+      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksOpen /dev/mapper/#{logical_volume_device_name} encrypted-#{logical_volume_device_name} --key-file -"
+      not_if ::File.exists?("/dev/mapper/encrypted-#{logical_volume_device_name}")
     end
   else
     Chef::Log.info "Encryption key not set - device encryption not enabled"
@@ -118,13 +122,13 @@ end
 # Format device
 filesystem nickname do
   fstype node['rs-storage']['device']['filesystem']
-  device(lazy do
-    if node['rs-storage']['device']['encryption'] && node['rs-storage']['device']['encryption_key']
-      node['rightscale_volume'][nickname]['device']
+  device(
+    if (node['rs-storage']['device']['encryption'] == true || node['rs-storage']['device']['encryption'] == 'true') && node['rs-storage']['device']['encryption_key']
+      "/dev/mapper/encrypted-#{logical_volume_device_name}"
     else
-      "/dev/mapper/encrypted-#{sanitized_nickname}-vg-#{sanitized_nickname}-lv"
+      "/dev/mapper/#{logical_volume_device_name}"
     end
-  end)
+  )
   mkfs_options node['rs-storage']['device']['mkfs_options']
   mount node['rs-storage']['device']['mount_point']
   action [:create, :enable, :mount]

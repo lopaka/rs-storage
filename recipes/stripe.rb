@@ -103,7 +103,7 @@ if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['dev
   if node['rs-storage']['device']['encryption_key']
 
     # Verify cryptsetup is installed
-    package "cryptsetup"
+    package 'cryptsetup'
 
     execute 'cryptsetup format device' do
       environment 'ENCRYPTION_KEY' => node['rs-storage']['device']['encryption_key']

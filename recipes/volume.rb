@@ -66,7 +66,7 @@ if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['dev
   if node['rs-storage']['device']['encryption_key']
 
     # Verify cryptsetup is installed
-    package "cryptsetup"
+    package 'cryptsetup'
 
     # Using notifies in second execute resource for the first because 'lazy' is needed and cannot be used in guards.
     execute 'cryptsetup format device' do

@@ -68,17 +68,13 @@ if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['dev
     # Verify cryptsetup is installed
     package 'cryptsetup'
 
-    # Using notifies in second execute resource for the first because 'lazy' is needed and cannot be used in guards.
     execute 'cryptsetup format device' do
       environment 'ENCRYPTION_KEY' => node['rs-storage']['device']['encryption_key']
       command lazy { "echo -n ${ENCRYPTION_KEY} | cryptsetup luksFormat #{node['rightscale_volume'][nickname]['device']} --batch-mode" }
-      action :nothing
-    end
-    execute 'cryptsetup verify isLuks' do
-      command lazy { "cryptsetup isLuks #{node['rightscale_volume'][nickname]['device']}" }
-      ignore_failure true
-      returns 1
-      notifies :run, 'execute[cryptsetup format device]', :immediately
+      not_if do
+        isluks_command = "cryptsetup isLuks #{node['rightscale_volume'][nickname]['device']}"
+        Mixlib::ShellOut.new(isluks_command).run_command
+      end
     end
 
     execute 'cryptsetup open device' do

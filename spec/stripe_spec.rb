@@ -19,6 +19,7 @@ describe 'rs-storage::stripe' do
 
   before do
     stub_command('[ `rs_config --get decommission_timeout` -eq 600 ]').and_return(false)
+    stub_command('cryptsetup isLuks /dev/mapper/data-storage-vg-data-storage-lv').and_return(false)
   end
 
   context 'rs-storage/restore/lineage is not set' do
@@ -48,11 +49,19 @@ describe 'rs-storage::stripe' do
       expect(chef_run).to create_lvm_logical_volume(logical_volume).with(
         group: volume_group,
         size: '100%VG',
-        filesystem: 'ext4',
-        mount_point: '/mnt/storage',
         stripes: 2,
         stripe_size: 512,
       )
+    end
+
+    it 'formats the volume and mounts it' do
+      expect(chef_run).to create_filesystem(nickname).with(
+        fstype: 'ext4',
+        mkfs_options: '-F',
+        mount: '/mnt/storage',
+      )
+      expect(chef_run).to enable_filesystem(nickname)
+      expect(chef_run).to mount_filesystem(nickname)
     end
 
     context 'iops is set to 100' do
@@ -74,6 +83,33 @@ describe 'rs-storage::stripe' do
         expect(chef_run).to attach_rightscale_volume(nickname_2)
       end
     end
+
+    context 'encryption is set' do
+      let(:chef_run) do
+        chef_runner.node.set['rs-storage']['device']['encryption'] = true
+        chef_runner.node.set['rs-storage']['device']['encryption_key'] = "ENCRYPTION_KEY"
+        chef_runner.converge(described_recipe)
+      end
+
+      it 'formats and opens encrypted device' do
+        expect(chef_run).to run_execute('cryptsetup format device').with(
+          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksFormat /dev/mapper/#{volume_group}-#{logical_volume} -"
+        )
+        expect(chef_run).to run_execute('cryptsetup open device').with(
+          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksOpen /dev/mapper/#{volume_group}-#{logical_volume} encrypted-#{volume_group}-#{logical_volume} --key-file -"
+        )
+      end
+      it 'formats the volume and mounts it' do
+        expect(chef_run).to create_filesystem(nickname).with(
+          fstype: 'ext4',
+          mkfs_options: '-F',
+          mount: '/mnt/storage',
+        )
+        expect(chef_run).to enable_filesystem(nickname)
+        expect(chef_run).to mount_filesystem(nickname)
+      end
+    end
+
   end
 
   context 'rs-storage/restore/lineage is set' do
@@ -99,11 +135,19 @@ describe 'rs-storage::stripe' do
       expect(chef_run).to create_lvm_logical_volume(logical_volume).with(
         group: volume_group,
         size: '100%VG',
-        filesystem: 'ext4',
-        mount_point: '/mnt/storage',
         stripes: 2,
         stripe_size: 512,
       )
+    end
+
+    it 'formats the volume and mounts it' do
+      expect(chef_run).to create_filesystem(nickname).with(
+        fstype: 'ext4',
+        mkfs_options: '-F',
+        mount: '/mnt/storage',
+      )
+      expect(chef_run).to enable_filesystem(nickname)
+      expect(chef_run).to mount_filesystem(nickname)
     end
 
     context 'iops is set to 100' do
@@ -119,6 +163,32 @@ describe 'rs-storage::stripe' do
           size: 5,
           options: {iops: 100},
         )
+      end
+    end
+
+    context 'encryption is set' do
+      let(:chef_run) do
+        chef_runner_restore.node.set['rs-storage']['device']['encryption'] = true
+        chef_runner_restore.node.set['rs-storage']['device']['encryption_key'] = "ENCRYPTION_KEY"
+        chef_runner_restore.converge(described_recipe)
+      end
+
+      it 'formats and opens encrypted device' do
+        expect(chef_run).to run_execute('cryptsetup format device').with(
+          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksFormat /dev/mapper/#{volume_group}-#{logical_volume} -"
+        )
+        expect(chef_run).to run_execute('cryptsetup open device').with(
+          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksOpen /dev/mapper/#{volume_group}-#{logical_volume} encrypted-#{volume_group}-#{logical_volume} --key-file -"
+        )
+      end
+      it 'formats the volume and mounts it' do
+        expect(chef_run).to create_filesystem(nickname).with(
+          fstype: 'ext4',
+          mkfs_options: '-F',
+          mount: '/mnt/storage',
+        )
+        expect(chef_run).to enable_filesystem(nickname)
+        expect(chef_run).to mount_filesystem(nickname)
       end
     end
 
@@ -138,5 +208,6 @@ describe 'rs-storage::stripe' do
         )
       end
     end
+
   end
 end

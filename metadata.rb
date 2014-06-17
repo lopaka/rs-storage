@@ -158,6 +158,7 @@ attribute 'rs-storage/device/encryption',
   :description => 'If enabled, will use LUKS to encrypt volume device.',
   :recipes => ['rs-storage::volume', 'rs-storage::stripe'],
   :default => 'false',
+  :choice => ['true', 'false'],
   :required => 'optional'
 
 attribute 'rs-storage/device/encryption_key',

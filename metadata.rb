@@ -155,13 +155,13 @@ attribute 'rs-storage/schedule/minute',
 
 attribute 'rs-storage/device/encryption',
   :display_name => 'Device Encryption',
-  :description => 'If enabled, will use LUKS to encrypt volume device.'
+  :description => 'If enabled, will use LUKS to encrypt volume device.',
   :recipes => ['rs-storage::volume', 'rs-storage::stripe'],
   :default => 'false',
   :required => 'optional'
 
 attribute 'rs-storage/device/encryption_key',
   :display_name => 'Device Encryption key',
-  :description => 'Encryption key for device encryption.'
+  :description => 'Encryption key for device encryption.',
   :recipes => ['rs-storage::volume', 'rs-storage::stripe'],
   :required => 'optional'

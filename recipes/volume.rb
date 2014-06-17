@@ -80,8 +80,8 @@ if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['dev
     end
 
     execute 'cryptsetup open device' do
-      command lazy { "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksOpen #{node['rightscale_volume'][nickname]['device']} encrypted-#{node['rs-storage']['backup']['lineage']} --key-file -" }
-      not_if ::File.exists?("/dev/mapper/encrypted-#{node['rs-storage']['backup']['lineage']}")
+      command lazy { "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksOpen #{node['rightscale_volume'][nickname]['device']} encrypted-#{nickname} --key-file -" }
+      not_if ::File.exists?("/dev/mapper/encrypted-#{nickname}")
     end
   else
     Chef::Log.info "Encryption key not set - device encryption not enabled"
@@ -92,7 +92,7 @@ filesystem nickname do
   fstype node['rs-storage']['device']['filesystem']
   device(lazy do
     if (node['rs-storage']['device']['encryption'] == true || node['rs-storage']['device']['encryption'] == 'true') && node['rs-storage']['device']['encryption_key']
-      "/dev/mapper/encrypted-#{node['rs-storage']['backup']['lineage']}"
+      "/dev/mapper/encrypted-#{nickname}"
     else
       node['rightscale_volume'][nickname]['device']
     end

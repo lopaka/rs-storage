@@ -92,7 +92,7 @@ filesystem nickname do
   fstype node['rs-storage']['device']['filesystem']
   device(lazy do
     if (node['rs-storage']['device']['encryption'] == true || node['rs-storage']['device']['encryption'] == 'true') && node['rs-storage']['device']['encryption_key']
-      "/dev/mapper/encrypted-#{node['rs-storage']['restore']['lineage']}"
+      "/dev/mapper/encrypted-#{node['rs-storage']['backup']['lineage']}"
     else
       node['rightscale_volume'][nickname]['device']
     end

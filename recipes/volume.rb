@@ -69,7 +69,8 @@ if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['dev
 
     # Using notifies in second execute resource for the first because 'lazy' is needed and cannot be used in guards.
     execute 'cryptsetup format device' do
-      command lazy { "echo -n '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksFormat #{node['rightscale_volume'][nickname]['device']} --batch-mode" }
+      environment 'ENCRYPTION_KEY' => node['rs-storage']['device']['encryption_key']
+      command lazy { "echo -n ${ENCRYPTION_KEY} | cryptsetup luksFormat #{node['rightscale_volume'][nickname]['device']} --batch-mode" }
       action :nothing
     end
     execute 'cryptsetup verify isLuks' do
@@ -80,7 +81,8 @@ if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['dev
     end
 
     execute 'cryptsetup open device' do
-      command lazy { "echo -n '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksOpen #{node['rightscale_volume'][nickname]['device']} encrypted-#{nickname} --key-file=-" }
+      environment 'ENCRYPTION_KEY' => node['rs-storage']['device']['encryption_key']
+      command lazy { "echo -n ${ENCRYPTION_KEY} | cryptsetup luksOpen #{node['rightscale_volume'][nickname]['device']} encrypted-#{nickname} --key-file=-" }
       not_if ::File.exists?("/dev/mapper/encrypted-#{nickname}")
     end
   else

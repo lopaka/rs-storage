@@ -78,11 +78,14 @@ describe 'rs-storage::volume' do
       )
     end
 
-    it 'mounts and enables the restored volume' do
-      expect(chef_run).to mount_mount(device).with(
+    it 'enables the volume and mounts it' do
+      expect(chef_run).to_not create_filesystem(nickname)
+      expect(chef_run).to enable_filesystem(nickname).with(
         fstype: 'ext4',
+        mkfs_options: '-F',
+        mount: '/mnt/storage',
       )
-      expect(chef_run).to enable_mount(device)
+      expect(chef_run).to mount_filesystem(nickname)
     end
 
     context 'iops is set to 100' do

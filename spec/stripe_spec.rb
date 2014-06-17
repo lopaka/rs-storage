@@ -142,14 +142,14 @@ describe 'rs-storage::stripe' do
       )
     end
 
-    it 'formats the volume and mounts it' do
-      expect(chef_run).to create_filesystem(nickname).with(
+    it 'enables the volume and mounts it' do
+      expect(chef_run).to_not create_filesystem(nickname)
+      expect(chef_run).to enable_filesystem(nickname).with(
         fstype: 'ext4',
         mkfs_options: '-F',
         device: "/dev/mapper/data--storage--vg-data--storage--lv",
         mount: '/mnt/storage',
       )
-      expect(chef_run).to enable_filesystem(nickname)
       expect(chef_run).to mount_filesystem(nickname)
     end
 
@@ -184,14 +184,15 @@ describe 'rs-storage::stripe' do
           command: "echo 'ENCRYPTION_KEY' | cryptsetup luksOpen /dev/mapper/data--storage--vg-data--storage--lv encrypted-data--storage--vg-data--storage--lv --key-file -"
         )
       end
-      it 'formats the volume and mounts it' do
-        expect(chef_run).to create_filesystem(nickname).with(
+
+      it 'enables the volume and mounts it' do
+        expect(chef_run).to_not create_filesystem(nickname)
+        expect(chef_run).to enable_filesystem(nickname).with(
           fstype: 'ext4',
           mkfs_options: '-F',
           device: "/dev/mapper/encrypted-data--storage--vg-data--storage--lv",
           mount: '/mnt/storage',
         )
-        expect(chef_run).to enable_filesystem(nickname)
         expect(chef_run).to mount_filesystem(nickname)
       end
     end

@@ -68,14 +68,21 @@ if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['dev
     # Verify cryptsetup is installed
     package "cryptsetup"
 
+    # Using notifies in second execute resource for the first because 'lazy' is needed and cannot be used in guards.
     execute 'cryptsetup format device' do
-      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksFormat #{node['rightscale_volume'][nickname]['device']} -"
-      not_if "cryptsetup isLuks #{node['rightscale_volume'][nickname]['device']}"
+      command lazy { "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksFormat #{node['rightscale_volume'][nickname]['device']} -" }
+      action :nothing
+    end
+    execute 'cryptsetup verify isLuks' do
+      command lazy { "cryptsetup isLuks #{node['rightscale_volume'][nickname]['device']}" }
+      ignore_failure true
+      returns 1
+      notifies :run, 'execute[cryptsetup format device]', :immediately
     end
 
     execute 'cryptsetup open device' do
-      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksOpen #{node['rightscale_volume'][nickname]['device']} encrypted-#{node['rs-storage']['restore']['lineage']} --key-file -"
-      not_if ::File.exists?("/dev/mapper/encrypted-#{node['rs-storage']['restore']['lineage']}")
+      command lazy { "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksOpen #{node['rightscale_volume'][nickname]['device']} encrypted-#{node['rs-storage']['backup']['lineage']} --key-file -" }
+      not_if ::File.exists?("/dev/mapper/encrypted-#{node['rs-storage']['backup']['lineage']}")
     end
   else
     Chef::Log.info "Encryption key not set - device encryption not enabled"

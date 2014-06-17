@@ -95,16 +95,20 @@ lvm_logical_volume "#{sanitized_nickname}-lv" do
 end
 
 # Encrypt if enabled
-if node['rs-storage']['device']['encryption']
+if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['device']['encryption'] == 'true'
   if node['rs-storage']['device']['encryption_key']
+
+    # Construct the logical volume from the name of the volume group and the name of the logical volume similar to how the
+    # lvm cookbook constructs the name during the creation of the logical volume
+    logical_volume_device = "#{to_dm_name("#{sanitized_nickname}-vg")}-#{to_dm_name("#{sanitized_nickname}-lv")}"
     execute 'cryptsetup format device' do
-      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksFormat /dev/mapper/#{sanitized_nickname}-vg-#{sanitized_nickname}-lv -"
-      not_if "cryptsetup isLuks /dev/mapper/#{sanitized_nickname}-vg-#{sanitized_nickname}-lv"
+      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksFormat /dev/mapper/#{logical_volume_device} -"
+      not_if "cryptsetup isLuks /dev/mapper/#{logical_volume_device}"
     end
 
     execute 'cryptsetup open device' do
-      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksOpen /dev/mapper/#{sanitized_nickname}-vg-#{sanitized_nickname}-lv encrypted-#{sanitized_nickname}-vg-#{sanitized_nickname}-lv --key-file -"
-      not_if ::File.exists?("/dev/mapper/encrypted-#{sanitized_nickname}-vg-#{sanitized_nickname}-lv")
+      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksOpen /dev/mapper/#{logical_volume_device} encrypted-#{logical_volume_device} --key-file -"
+      not_if ::File.exists?("/dev/mapper/encrypted-#{logical_volume_device}")
     end
   else
     Chef::Log.info "Encryption key not set - device encryption not enabled"

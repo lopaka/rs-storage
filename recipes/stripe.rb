@@ -131,5 +131,5 @@ filesystem nickname do
   )
   mkfs_options node['rs-storage']['device']['mkfs_options']
   mount node['rs-storage']['device']['mount_point']
-  action [:create, :enable, :mount]
+  action (node['rs-storage']['restore']['lineage'].to_s.empty? ? [:create] : []) + [:enable, :mount]
 end

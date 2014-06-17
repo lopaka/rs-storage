@@ -98,13 +98,13 @@ end
 if node['rs-storage']['device']['encryption']
   if node['rs-storage']['device']['encryption_key']
     execute 'format encrypt device' do
-      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksFormat /dev/mapper/#{sanitized_nickname}-vg-#{sanitized_nickname}-lv"
-      not_if ::File.exists?("mapper device")
+      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksFormat /dev/mapper/#{sanitized_nickname}-vg-#{sanitized_nickname}-lv -"
+      not_if ::File.exists?("/dev/mapper/encrypted_#{sanitized_nickname}-vg-#{sanitized_nickname}-lv")
     end
 
     execute 'open encrypt device' do
-      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksOpen /dev/mapper/#{sanitized_nickname}-vg-#{sanitized_nickname}-lv encrypted_#{sanitized_nickname}-vg-#{sanitized_nickname}-lv -d -"
-      not_if ::File.exists?("mapper device")
+      command "echo '#{node['rs-storage']['device']['encryption_key']}' | cryptsetup luksOpen /dev/mapper/#{sanitized_nickname}-vg-#{sanitized_nickname}-lv encrypted_#{sanitized_nickname}-vg-#{sanitized_nickname}-lv --key-file -"
+      not_if ::File.exists?("/dev/mapper/encrypted_#{sanitized_nickname}-vg-#{sanitized_nickname}-lv")
     end
   else
     Chef::Log.info "Encryption key not set - device encryption not enabled"
@@ -114,7 +114,12 @@ end
 # Format device
 filesystem nickname do
   fstype node['rs-storage']['device']['filesystem']
-  device lazy { node['rightscale_volume'][nickname]['device'] }
+  device lazy do
+    if node['rs-storage']['device']['encryption'] && node['rs-storage']['device']['encryption_key']
+      node['rightscale_volume'][nickname]['device']
+    else
+      "/dev/mapper/encrypted_#{sanitized_nickname}-vg-#{sanitized_nickname}-lv"
+    end
   mkfs_options node['rs-storage']['device']['mkfs_options']
   mount node['rs-storage']['device']['mount_point']
   action [:create, :enable, :mount]

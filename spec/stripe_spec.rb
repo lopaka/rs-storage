@@ -94,10 +94,10 @@ describe 'rs-storage::stripe' do
 
       it 'sets up and opens encrypted device' do
         expect(chef_run).to run_execute('cryptsetup format device').with(
-          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksFormat /dev/mapper/data--storage--vg-data--storage--lv -"
+          command: "echo -n ${ENCRYPTION_KEY} | cryptsetup luksFormat /dev/mapper/data--storage--vg-data--storage--lv --batch-mode"
         )
         expect(chef_run).to run_execute('cryptsetup open device').with(
-          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksOpen /dev/mapper/data--storage--vg-data--storage--lv encrypted-data--storage--vg-data--storage--lv --key-file -"
+          command: "echo -n ${ENCRYPTION_KEY} | cryptsetup luksOpen /dev/mapper/data--storage--vg-data--storage--lv encrypted-data--storage--vg-data--storage--lv --key-file=-"
         )
       end
       it 'formats the volume and mounts it' do
@@ -178,10 +178,10 @@ describe 'rs-storage::stripe' do
 
       it 'sets up and opens encrypted device' do
         expect(chef_run).to run_execute('cryptsetup format device').with(
-          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksFormat /dev/mapper/data--storage--vg-data--storage--lv -"
+          command: "echo -n ${ENCRYPTION_KEY} | cryptsetup luksFormat /dev/mapper/data--storage--vg-data--storage--lv --batch-mode"
         )
         expect(chef_run).to run_execute('cryptsetup open device').with(
-          command: "echo 'ENCRYPTION_KEY' | cryptsetup luksOpen /dev/mapper/data--storage--vg-data--storage--lv encrypted-data--storage--vg-data--storage--lv --key-file -"
+          command: "echo -n ${ENCRYPTION_KEY} | cryptsetup luksOpen /dev/mapper/data--storage--vg-data--storage--lv encrypted-data--storage--vg-data--storage--lv --key-file=-"
         )
       end
 

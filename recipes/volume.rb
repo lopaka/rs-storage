@@ -73,7 +73,9 @@ if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['dev
       command lazy { "echo -n ${ENCRYPTION_KEY} | cryptsetup luksFormat #{node['rightscale_volume'][nickname]['device']} --batch-mode" }
       not_if do
         isluks_command = "cryptsetup isLuks #{node['rightscale_volume'][nickname]['device']}"
-        Mixlib::ShellOut.new(isluks_command).run_command
+        cmd = Mixlib::ShellOut.new(isluks_command).run_command
+        # stderr is empty if the device is already formated with LUKS.
+        cmd.stderr.empty?
       end
     end
 

@@ -74,7 +74,7 @@ if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['dev
       not_if do
         isluks_command = "cryptsetup isLuks #{node['rightscale_volume'][nickname]['device']}"
         cmd = Mixlib::ShellOut.new(isluks_command).run_command
-        # stderr is empty if the device is already formated with LUKS.
+        # stderr is empty if the device is already formatted with LUKS.
         cmd.stderr.empty?
       end
     end

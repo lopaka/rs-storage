@@ -122,7 +122,7 @@ if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['dev
 end
 
 # Format device
-filesystem nickname do
+filesystem device_nickname do
   fstype node['rs-storage']['device']['filesystem']
   device(
     if (node['rs-storage']['device']['encryption'] == true || node['rs-storage']['device']['encryption'] == 'true') && node['rs-storage']['device']['encryption_key']

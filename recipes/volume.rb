@@ -70,9 +70,9 @@ if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['dev
 
     execute 'cryptsetup format device' do
       environment 'ENCRYPTION_KEY' => node['rs-storage']['device']['encryption_key']
-      command lazy { "echo -n ${ENCRYPTION_KEY} | cryptsetup luksFormat #{node['rightscale_volume'][nickname]['device']} --batch-mode" }
+      command lazy { "echo -n ${ENCRYPTION_KEY} | cryptsetup luksFormat #{node['rightscale_volume'][device_nickname]['device']} --batch-mode" }
       not_if do
-        isluks_command = "cryptsetup isLuks #{node['rightscale_volume'][nickname]['device']}"
+        isluks_command = "cryptsetup isLuks #{node['rightscale_volume'][device_nickname]['device']}"
         cmd = Mixlib::ShellOut.new(isluks_command).run_command
         # stderr is empty if the device is already formatted with LUKS.
         cmd.stderr.empty?
@@ -81,21 +81,21 @@ if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['dev
 
     execute 'cryptsetup open device' do
       environment 'ENCRYPTION_KEY' => node['rs-storage']['device']['encryption_key']
-      command lazy { "echo -n ${ENCRYPTION_KEY} | cryptsetup luksOpen #{node['rightscale_volume'][nickname]['device']} encrypted-#{nickname} --key-file=-" }
-      not_if { ::File.exists?("/dev/mapper/encrypted-#{nickname}") }
+      command lazy { "echo -n ${ENCRYPTION_KEY} | cryptsetup luksOpen #{node['rightscale_volume'][device_nickname]['device']} encrypted-#{device_nickname} --key-file=-" }
+      not_if { ::File.exists?("/dev/mapper/encrypted-#{device_nickname}") }
     end
   else
     Chef::Log.info "Encryption key not set - device encryption not enabled"
   end
 end
 
-filesystem nickname do
+filesystem device_nickname do
   fstype node['rs-storage']['device']['filesystem']
   device(lazy do
     if (node['rs-storage']['device']['encryption'] == true || node['rs-storage']['device']['encryption'] == 'true') && node['rs-storage']['device']['encryption_key']
-      "/dev/mapper/encrypted-#{nickname}"
+      "/dev/mapper/encrypted-#{device_nickname}"
     else
-      node['rightscale_volume'][nickname]['device']
+      node['rightscale_volume'][device_nickname]['device']
     end
   end)
   mkfs_options node['rs-storage']['device']['mkfs_options']

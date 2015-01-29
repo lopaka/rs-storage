@@ -4,7 +4,7 @@ maintainer_email 'cookbooks@rightscale.com'
 license          'Apache 2.0'
 description      'Provides recipes for managing volumes on a Server in a RightScale supported cloud'
 long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
-version          '1.0.3'
+version          '1.1.0'
 
 depends 'chef_handler', '~> 1.1.6'
 depends 'filesystem', '~> 0.9.0'
@@ -15,66 +15,57 @@ depends 'rightscale_volume', '~> 1.2.4'
 
 recipe 'rs-storage::default', 'Sets up required dependencies for using this cookbook'
 recipe 'rs-storage::volume', 'Creates a volume and attaches it to the server'
-recipe 'rs-storage::stripe', 'Creates volumes, attaches them to the server, and sets up a striped LVM'
 recipe 'rs-storage::backup', :description => 'Creates a backup', :thread => 'storage_backup'
 recipe 'rs-storage::decommission', 'Destroys LVM conditionally, detaches and destroys volumes. This recipe should' +
   ' be used as a decommission recipe in a RightScale ServerTemplate.'
 recipe 'rs-storage::schedule', 'Enable/disable periodic backups based on rs-storage/schedule/enable'
 
-attribute 'rs-storage/device/count',
-  :display_name => 'Device Count',
-  :description => 'The number of devices to create and use in the Logical Volume. If this value is set to more than' +
-    ' 1, it will create the specified number of devices and create an LVM on the devices.',
-  :default => '2',
-  :recipes => ['rs-storage::stripe', 'rs-storage::decommission'],
-  :required => 'recommended'
-
 attribute 'rs-storage/device/mount_point',
-  :display_name => 'Device Mount Point',
-  :description => 'The mount point to mount the device on. Example: /mnt/storage',
+  :display_name => 'Device Mount Points',
+  :description => 'Mount point(s) to mount the device(s) on. Comma separated list will attach that number of volumes. Example: /mnt/storage',
   :default => '/mnt/storage',
-  :recipes => ['rs-storage::volume', 'rs-storage::stripe', 'rs-storage::decommission'],
+  :recipes => ['rs-storage::volume', 'rs-storage::decommission'],
   :required => 'recommended'
 
 attribute 'rs-storage/device/nickname',
   :display_name => 'Device Nickname',
-  :description => 'Nickname for the device. Example: data_storage',
+  :description => 'Nickname for the device. Multiple devices will have incremented number. Example: data_storage',
   :default => 'data_storage',
-  :recipes => ['rs-storage::volume', 'rs-storage::stripe', 'rs-storage::decommission'],
+  :recipes => ['rs-storage::volume','rs-storage::decommission'],
   :required => 'recommended'
 
 attribute 'rs-storage/device/volume_size',
   :display_name => 'Device Volume Size',
   :description => 'Size of the volume or logical volume to create (in GB). Example: 10',
   :default => '10',
-  :recipes => ['rs-storage::volume', 'rs-storage::stripe'],
+  :recipes => ['rs-storage::volume'],
   :required => 'recommended'
 
 attribute 'rs-storage/device/iops',
   :display_name => 'Device IOPS',
   :description => 'IO Operations Per Second to use for the device. Currently this value is only used on AWS clouds.' +
     ' Example: 100',
-  :recipes => ['rs-storage::volume', 'rs-storage::stripe'],
+  :recipes => ['rs-storage::volume'],
   :required => 'optional'
 
 attribute 'rs-storage/device/volume_type',
   :display_name => 'Volume Type',
   :description => 'Volume Type to use for creating volumes. Example: gp2',
-  :recipes => ['rs-storage::volume', 'rs-storage::stripe'],
+  :recipes => ['rs-storage::volume'],
   :required => 'optional'
 
 attribute 'rs-storage/device/filesystem',
   :display_name => 'Device Filesystem',
   :description => 'The filesystem to be used on the device. Example: ext4',
   :default => 'ext4',
-  :recipes => ['rs-storage::volume', 'rs-storage::stripe'],
+  :recipes => ['rs-storage::volume'],
   :required => 'optional'
 
 attribute 'rs-storage/device/detach_timeout',
   :display_name => 'Detach Timeout',
   :description => 'Amount of time (in seconds) to wait for a single volume to detach at decommission. Example: 300',
   :default => '300',
-  :recipes => ['rs-storage::volume', 'rs-storage::stripe'],
+  :recipes => ['rs-storage::volume'],
   :required => 'optional'
 
 attribute 'rs-storage/device/destroy_on_decommission',
@@ -93,14 +84,14 @@ attribute 'rs-storage/backup/lineage',
 attribute 'rs-storage/restore/lineage',
   :display_name => 'Restore Lineage',
   :description => 'The lineage name to restore backups. Example: staging',
-  :recipes => ['rs-storage::volume', 'rs-storage::stripe'],
+  :recipes => ['rs-storage::volume'],
   :required => 'recommended'
 
 attribute 'rs-storage/restore/timestamp',
   :display_name => 'Restore Timestamp',
   :description => 'The timestamp (in seconds since UNIX epoch) to select a backup to restore from.' +
     ' The backup selected will have been created on or before this timestamp. Example: 1391473172',
-  :recipes => ['rs-storage::volume', 'rs-storage::stripe'],
+  :recipes => ['rs-storage::volume'],
   :required => 'recommended'
 
 attribute 'rs-storage/backup/keep/dailies',

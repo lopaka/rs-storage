@@ -8,7 +8,7 @@
 
 Provides recipes for managing volumes on a Server in a RightScale supported cloud which include:
 
-* Creation of single and multi-stripe volumes
+* Creation of volumes
 * Taking backups of volumes
 * Restoring from backups
 * Schedule periodic backups
@@ -51,32 +51,6 @@ To create a volume with IOPS on EC2, set the following attribute before running 
 
 - `node['rs-storage']['device']['iops']` - the value of IOPS to use
 
-## Creating a logical volume with striping
-
-To create a logical volume with striping using LVM, run the `rs-storage::stripe` recipe with the following attributes
-set:
-
-- `node['rs-storage']['device']['nickname']` - the nickname to use as prefix for the logical volume
-- `node['rs-storage']['device']['count']` - number of volumes to create in the logical volume
-- `node['rs-storage']['device']['volume_size']` - the total size of the logical volume
-- `node['rs-storage']['device']['filesystem']` - the filesystem to use on the logical volume
-- `node['rs-storage']['device']['mount_point']` - the location to mount the logical volume
-
-This will create the number of volumes specified in `node['rs-storage']['device']['count']`. Each volume created
-will have a nickname of `"#{nickname}_#{stripe_number}"`. The size for each volume is calculated by the following
-formula:
-
-```ruby
-(total_size.to_f / device_count.to_f).ceil
-
-# For example, total size = 10, stripe count = 3
-(10.0 / 3.0).ceil
-# => 4.0
-```
-
-This will create a volume group with the name `"#{nickname}-vg"` and a logical volume in it with the name
-`"#{nickname}-lv"`, format it with the filesystem specified, and mount it on the location specified.
-
 ## Backing up volume(s) & Cleaning up backups
 
 To create a backup of all volumes attached to the server, run the `rs-storage::backup` recipe with the following
@@ -108,20 +82,6 @@ timestamp will be restored. To restore a backup from a specific timestamp, set t
 - `node['rs-storage']['restore']['timestamp']` - the timestamp of the backup to restore from (in seconds since UNIX
   epoch)
 
-## Restoring a logical volume composed of multiple volumes from a backup
-
-To restore a logical volume composed of multiple volumes from a backup, run the `rs-storage::stripe` recipe with the
-same set of attributes mentioned in the [previous section](#creating-stripe-of-volumes) along with the following
-attribute:
-
-- `node['rs-storage']['restore']['lineage']` - the lineage to restore the backup from
-
-This will restore multiple volumes from the backup matching the lineage. By default, the backup with the latest
-timestamp will be restored. To restore backup from a specific timestamp, set the following attribute:
-
-- `node['rs-storage']['restore']['timestamp']` - the timestamp of the backup to restore from (in seconds since UNIX
-  epoch)
-
 ## Scheduling automated backups of volume(s)
 
 To schedule automated backups, run the `rs-storage::schedule` recipe with the following attributes set:
@@ -146,8 +106,7 @@ do nothing in the following conditions:
 
 This recipe also has a safety attribute `node['rs-storage']['device']['destroy_on_decommission']`. This attribute will
 be set to `false` by default and should be overridden and set to `true` in order for the devices to be detached and
-deleted. If an LVM is found (created using `rs-storage::stripe`), the LVM will be conditionally removed before detaching
-the volume.
+deleted.
 
 # Attributes
 
@@ -166,7 +125,6 @@ the volume.
   the server. Default is `false`.
 - `node['rs-storage']['device']['mkfs_options']` - Additional mkfs options for formatting the device. Default is `'-F'`
   which is required to avoid warnings about formatting the whole device.
-- `node['rs-storage']['device']['stripe_size']` - The stripe size to use on LVM. Default is `512`.
 - `node['rs-storage']['backup']['lineage']` - The backup lineage. Default is `nil`.
 - `node['rs-storage']['backup']['keep']['keep_last']` - Maximum snapshots to keep. Default is `60`.
 - `node['rs-storage']['backup']['keep']['dailies']` - Number of daily backups to keep. Default is `14`.
@@ -195,15 +153,6 @@ Creates a new volume from scratch or from an existing backup based on the value 
 backup matching this lineage otherwise a new volume will be created from scratch. This recipe will also format the
 volume using the filesystem specified in `node['rs-storage']['device']['filesystem']` and mount the volume on the
 location specified in `node['rs-storage']['device']['mount_point']`.
-
-## `rs-storage::stripe`
-
-Creates a new logical volume composed of volumes from scratch or from an existing backup based on the value provided in
-the `node['rs-storage']['restore']['lineage']` attribute. If this attribute is set, the volumes will be restored from a
-backup matching this lineage otherwise a new logical volume composed of volumes will be created from scratch. This
-recipe will create a striped logical volume using LVM on the volumes and format the logical volume using the filesystem
-specified in `node['rs-storage']['device']['filesystem']`. This will also mount the volume on the location specified in
-`node['rs-storage']['device']['mount_point']`.
 
 ## `rs-storage::backup`
 

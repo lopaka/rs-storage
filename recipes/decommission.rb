@@ -33,53 +33,22 @@ elsif ['shutting-down:reboot', 'shutting-down:stop', 'shutting-down:unknown'].in
 else
   device_nickname = node['rs-storage']['device']['nickname']
 
-  # If LVM is used, we will have one or more devices with the device nickname appended with the device number. Destroy
-  # the LVM conditionally and then detach and delete all the volumes.
-  if is_lvm_used?(node['rs-storage']['device']['mount_point'])
-    # Remove any characters other than alphanumeric and dashes and replace with dashes
-    sanitized_nickname = device_nickname.downcase.gsub(/[^-a-z0-9]/, '-')
+  # Determine how many volumes to detached based on mount points provided
+  mount_points = node['rs-storage']['device']['mount_point'].split(/\s*,\s*/)
 
-    # Construct the logical volume from the name of the volume group and the name of the logical volume similar to how the
-    # lvm cookbook constructs the name during the creation of the logical volume
-    logical_volume_device = "/dev/mapper/#{to_dm_name("#{sanitized_nickname}-vg")}-#{to_dm_name("#{sanitized_nickname}-lv")}"
-
-    log "Unmounting #{node['rs-storage']['device']['mount_point']}"
-    # There might still be some open files from the mount. Just ignore failure for now.
-    mount node['rs-storage']['device']['mount_point'] do
-      device logical_volume_device
-      ignore_failure true
-      action [:umount, :disable]
-    end
-
-    log "LVM is used on the device(s). Cleaning up the LVM."
-    # Clean up the LVM conditionally
-    ruby_block 'clean up LVM' do
-      block do
-        remove_lvm("#{sanitized_nickname}-vg")
-      end
-    end
-
-    # Detach and delete all attached volumes
-    1.upto(node['rs-storage']['device']['count'].to_i) do |device_num|
-      rightscale_volume "#{device_nickname}_#{device_num}" do
-        action [:detach, :delete]
-      end
-    end
-  # If LVM is not used, we only have a single device. In this case, unmount, detach and delete the volume.
-  else
-    # Unmount the volume
-    log "Unmounting #{node['rs-storage']['device']['mount_point']}"
+  mount_points.to_enum.with_index(1) do |mount_point, device_num|
+    # Unmount the volumes
+    log "Unmounting #{mount_point}"
     # There might still be some open files from the mount point. Just ignore the failure for now.
-    mount node['rs-storage']['device']['mount_point'] do
-      device lazy { node['rightscale_volume'][device_nickname]['device'] }
+    mount mount_point do
+      device lazy { node['rightscale_volume']["#{device_nickname}_#{device_num}"]['device'] }
       ignore_failure true
       action [:umount, :disable]
       only_if { node.attribute?('rightscale_volume') && node['rightscale_volume'].attribute?(device_nickname) }
     end
 
     # Detach and delete the volume
-    log 'LVM was not used on the device, simply detaching the deleting the device.'
-    rightscale_volume device_nickname do
+    rightscale_volume "#{device_nickname}_#{device_num}" do
       action [:detach, :delete]
     end
   end

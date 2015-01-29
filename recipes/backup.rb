@@ -37,12 +37,16 @@ end
 
 device_nickname = node['rs-storage']['device']['nickname']
 
-log "Freezing the filesystem mounted on #{node['rs-storage']['device']['mount_point']}"
+# Determine how many volumes to freeze based on mount points provided
+mount_points = node['rs-storage']['device']['mount_point'].split(/\s*,\s*/)
 
-filesystem "freeze #{device_nickname}" do
-  label device_nickname
-  mount node['rs-storage']['device']['mount_point']
-  action :freeze
+mount_points.to_enum.with_index(1) do |mount_point, device_num|
+  log "Freezing the filesystem mounted on #{mount_point}"
+  filesystem "freeze #{device_nickname}_#{device_num}" do
+    label "#{device_nickname}_#{device_num}"
+    mount mount_point
+    action :freeze
+  end
 end
 
 log "Taking a backup of lineage '#{node['rs-storage']['backup']['lineage']}'"
@@ -52,12 +56,13 @@ rightscale_backup device_nickname do
   action :create
 end
 
-log "Unfreezing the filesystem mounted on #{node['rs-storage']['device']['mount_point']}"
-
-filesystem "unfreeze #{device_nickname}" do
-  label device_nickname
-  mount node['rs-storage']['device']['mount_point']
-  action :unfreeze
+mount_points.to_enum.with_index(1) do |mount_point, device_num|
+  log "Unfreezing the filesystem mounted on #{mount_point}"
+  filesystem "unfreeze #{device_nickname}_#{device_num}" do
+    label "#{device_nickname}_#{device_num}"
+    mount mount_point
+    action :unfreeze
+  end
 end
 
 log 'Cleaning up old snapshots'

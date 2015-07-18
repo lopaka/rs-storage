@@ -92,8 +92,48 @@ end
 lvm_logical_volume "#{sanitized_nickname}-lv" do
   group "#{sanitized_nickname}-vg"
   size '100%VG'
-  filesystem node['rs-storage']['device']['filesystem']
-  mount_point node['rs-storage']['device']['mount_point']
   stripes device_count
   stripe_size node['rs-storage']['device']['stripe_size']
+end
+
+# Construct the logical volume from the name of the volume group and the name of the logical volume similar to how the
+# lvm cookbook constructs the name during the creation of the logical volume
+logical_volume_device_name = "#{to_dm_name("#{sanitized_nickname}-vg")}-#{to_dm_name("#{sanitized_nickname}-lv")}"
+
+# Encrypt if enabled
+if node['rs-storage']['device']['encryption'] == true || node['rs-storage']['device']['encryption'] == 'true'
+  if node['rs-storage']['device']['encryption_key']
+
+    # Verify cryptsetup is installed
+    package 'cryptsetup'
+
+    execute 'cryptsetup format device' do
+      environment 'ENCRYPTION_KEY' => node['rs-storage']['device']['encryption_key']
+      command "echo -n ${ENCRYPTION_KEY} | cryptsetup luksFormat /dev/mapper/#{logical_volume_device_name} --batch-mode"
+      not_if "cryptsetup isLuks /dev/mapper/#{logical_volume_device_name}"
+    end
+
+    execute 'cryptsetup open device' do
+      environment 'ENCRYPTION_KEY' => node['rs-storage']['device']['encryption_key']
+      command "echo -n ${ENCRYPTION_KEY} | cryptsetup luksOpen /dev/mapper/#{logical_volume_device_name} encrypted-#{logical_volume_device_name} --key-file=-"
+      not_if { ::File.exists?("/dev/mapper/encrypted-#{logical_volume_device_name}") }
+    end
+  else
+    Chef::Log.info "Encryption key not set - device encryption not enabled"
+  end
+end
+
+# Format device
+filesystem device_nickname do
+  fstype node['rs-storage']['device']['filesystem']
+  device(
+    if (node['rs-storage']['device']['encryption'] == true || node['rs-storage']['device']['encryption'] == 'true') && node['rs-storage']['device']['encryption_key']
+      "/dev/mapper/encrypted-#{logical_volume_device_name}"
+    else
+      "/dev/mapper/#{logical_volume_device_name}"
+    end
+  )
+  mkfs_options node['rs-storage']['device']['mkfs_options']
+  mount node['rs-storage']['device']['mount_point']
+  action (node['rs-storage']['restore']['lineage'].to_s.empty? ? [:create] : []) + [:enable, :mount]
 end

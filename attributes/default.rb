@@ -86,3 +86,9 @@ default['rs-storage']['backup']['keep']['yearlies'] = 2
 
 # Maximum backups to keep
 default['rs-storage']['backup']['keep']['keep_last'] = 60
+
+# Enable device encryption
+default['rs-storage']['device']['encryption'] = false
+
+# Encryption key
+default['rs-storage']['device']['encryption_key'] = nil
